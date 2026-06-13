@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Protein → Music | Hear Disease Mutations</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #0f0f1a;
+    color: #e8e8f0;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+  .container { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+  .subtitle { color: #9999b3; margin-bottom: 32px; font-size: 15px; }
+
+  .intro {
+    background: #1a1a2e; border: 1px solid #2a2a40; border-radius: 12px;
+    padding: 20px 24px; margin-bottom: 28px;
+  }
+  .intro p {
+    font-size: 14px; line-height: 1.7; color: #c7c7e0; margin-bottom: 12px;
+  }
+  .intro p:last-child { margin-bottom: 0; }
+  .intro strong { color: #e8e8f0; }
+
+  .presets { display: flex; gap: 10px; margin-bottom: 32px; flex-wrap: wrap; }
+  .preset-btn {
+    background: #1a1a2e; border: 1px solid #33334d; color: #e8e8f0;
+    padding: 10px 18px; border-radius: 8px; cursor: pointer;
+    font-size: 14px; transition: all 0.15s;
+  }
+  .preset-btn:hover { border-color: #6366f1; }
+  .preset-btn.active { background: #6366f1; border-color: #6366f1; }
+
+  .search-section { margin-bottom: 20px; position: relative; }
+  .search-input {
+    width: 100%; padding: 12px 16px; background: #1a1a2e; border: 1px solid #33334d;
+    border-radius: 8px; color: #e8e8f0; font-size: 14px; outline: none;
+  }
+  .search-input:focus { border-color: #6366f1; }
+  .search-results {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 10;
+    background: #1a1a2e; border: 1px solid #33334d; border-radius: 8px;
+    margin-top: 4px; max-height: 240px; overflow-y: auto; display: none;
+  }
+  .search-results.visible { display: block; }
+  .search-result-item {
+    padding: 10px 16px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #2a2a40;
+  }
+  .search-result-item:hover { background: #2a2a40; }
+  .search-result-item:last-child { border-bottom: none; }
+  .search-result-gene { color: #9999b3; font-size: 12px; }
+
+  .variant-section {
+    background: #1a1a2e; border: 1px solid #2a2a40; border-radius: 12px;
+    padding: 20px; margin-bottom: 20px;
+  }
+  .variant-protein-name { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .variant-dropdown {
+    width: 100%; padding: 10px; background: #0f0f1a; border: 1px solid #33334d;
+    border-radius: 8px; color: #e8e8f0; font-size: 14px; margin-bottom: 12px;
+  }
+  .generate-btn {
+    width: 100%; padding: 12px; background: #6366f1; border: none; border-radius: 8px;
+    color: white; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .generate-btn:hover { background: #5558e0; }
+
+  .card {
+    background: #1a1a2e; border: 1px solid #2a2a40; border-radius: 12px;
+    padding: 24px; margin-bottom: 20px; display: none;
+  }
+  .card.visible { display: block; }
+
+  .protein-name { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .protein-meta { color: #9999b3; font-size: 13px; margin-bottom: 16px; }
+  .disease-tag {
+    display: inline-block; background: #312e81; color: #c7d2fe;
+    padding: 4px 10px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;
+  }
+  .note { color: #b3b3cc; font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
+
+  .players { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .player-box {
+    background: #0f0f1a; border-radius: 8px; padding: 16px; text-align: center;
+  }
+  .player-label { font-size: 13px; color: #9999b3; margin-bottom: 8px; font-weight: 600; }
+  audio { width: 100%; }
+
+  .guess-section { margin: 20px 0; padding: 16px; background: #0f0f1a; border-radius: 8px; text-align: center; }
+  .guess-prompt { font-size: 14px; color: #c7c7e0; margin-bottom: 12px; }
+  .guess-buttons { display: flex; gap: 12px; justify-content: center; }
+  .guess-btn {
+    background: #2a2a40; border: 1px solid #33334d; color: #e8e8f0;
+    padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px;
+    transition: all 0.15s;
+  }
+  .guess-btn:hover { border-color: #6366f1; }
+  .guess-btn:disabled { cursor: default; opacity: 0.6; }
+  .guess-result { margin-top: 12px; font-size: 15px; font-weight: 600; min-height: 22px; }
+  .guess-result.correct { color: #4ade80; }
+  .guess-result.incorrect { color: #f87171; }
+
+  .chart-title { font-size: 14px; color: #9999b3; margin-bottom: 12px; }
+  .chart { display: flex; align-items: flex-end; gap: 4px; height: 120px; padding: 0 4px; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; }
+  .bar { width: 100%; max-width: 32px; background: #33334d; border-radius: 3px 3px 0 0; transition: height 0.3s; min-height: 2px; }
+  .bar.mutation { background: #ef4444; }
+  .bar-label { font-size: 11px; color: #6b6b85; }
+
+  .loading { text-align: center; padding: 40px; color: #9999b3; display: none; }
+  .loading.visible { display: block; }
+
+  .hint { color: #6b6b85; font-size: 13px; margin-top: 24px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🧬 Protein → Music</h1>
+  <p class="subtitle">Hear what disease-causing mutations sound like — generated live using ESM-2 embeddings.</p>
+
+  <div class="intro">
+    <p>
+      Every protein in your body is a chain of amino acids — and sometimes,
+      a single letter in that chain changes. That's a mutation. Some are
+      harmless. Others cause diseases like sickle cell anemia, cystic fibrosis,
+      or cancer.
+    </p>
+    <p>
+      <strong>ESM-2</strong> is an AI model trained on hundreds of millions of
+      protein sequences from across all life on Earth. It learned, just from
+      patterns in evolution, which amino acid changes are "normal" and which
+      ones are deeply unusual — without ever being told what a disease is.
+    </p>
+    <p>
+      This tool takes a healthy protein and its disease-causing mutant version,
+      runs both through ESM-2, and turns the AI's internal representations into
+      <strong>music</strong>. The chart below shows exactly how much the AI
+      "notices" the mutation at each position — usually a sharp spike right
+      where the disease-causing change occurs.
+    </p>
+    <p>
+      <strong>Try the blind test:</strong> listen to both audio tracks without
+      looking at the labels. Can you tell which one is the mutant — just by ear?
+    </p>
+  </div>
+
+  <div class="presets" id="presets"></div>
+
+  <div class="search-section">
+    <input type="text" id="proteinSearch" placeholder="Or search any protein (e.g. insulin, EGFR, myosin)..." class="search-input">
+    <div class="search-results" id="searchResults"></div>
+  </div>
+
+  <div class="variant-section" id="variantSection" style="display:none;">
+    <p class="variant-protein-name" id="variantProteinName"></p>
+    <select id="variantDropdown" class="variant-dropdown"></select>
+    <button class="generate-btn" id="generateCustomBtn">Generate</button>
+  </div>
+
+  <div class="loading" id="loading">Generating... fetching protein, running ESM-2, composing audio...</div>
+
+  <div class="card" id="card">
+    <span class="disease-tag" id="diseaseTag"></span>
+    <div class="protein-name" id="proteinName"></div>
+    <div class="protein-meta" id="proteinMeta"></div>
+    <p class="note" id="note"></p>
+
+    <div class="players">
+      <div class="player-box">
+        <div class="player-label">Track A</div>
+        <audio controls id="audioA"></audio>
+      </div>
+      <div class="player-box">
+        <div class="player-label">Track B</div>
+        <audio controls id="audioB"></audio>
+      </div>
+    </div>
+
+    <div class="guess-section" id="guessSection">
+      <p class="guess-prompt">Which track sounds "wrong" — like something is broken?</p>
+      <div class="guess-buttons">
+        <button class="guess-btn" onclick="makeGuess('A')">Track A is the mutant</button>
+        <button class="guess-btn" onclick="makeGuess('B')">Track B is the mutant</button>
+      </div>
+      <p class="guess-result" id="guessResult"></p>
+    </div>
+
+    <div class="chart-title">How much does the mutation disrupt the protein's "fingerprint" at each position?</div>
+    <div style="position: relative; width: 100%; height: 220px;">
+      <canvas id="chart" role="img" aria-label="Line chart showing disruption magnitude at each residue position, with the mutation site highlighted"></canvas>
+    </div>
+    <p style="font-size: 13px; color: #b3b3cc; margin-top: 8px;" id="chartExplanation"></p>
+  </div>
+
+  <p class="hint">Tip: Listen to both tracks without looking — can you tell which one is the mutant?</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+<script>
+const presets = {{ presets | tojson }};
+const presetsDiv = document.getElementById("presets");
+
+for (const key in presets) {
+  const btn = document.createElement("button");
+  btn.className = "preset-btn";
+  btn.textContent = presets[key].name.split("—")[0].trim();
+  btn.onclick = () => generate(key, btn);
+  presetsDiv.appendChild(btn);
+}
+
+// ── Protein search ──────────────────────────────────────
+const searchInput = document.getElementById("proteinSearch");
+const searchResults = document.getElementById("searchResults");
+let searchTimeout;
+
+searchInput.addEventListener("input", () => {
+  clearTimeout(searchTimeout);
+  const query = searchInput.value.trim();
+  if (query.length < 2) {
+    searchResults.classList.remove("visible");
+    return;
+  }
+  searchTimeout = setTimeout(() => doSearch(query), 400);
+});
+
+async function doSearch(query) {
+  const resp = await fetch(`/search_proteins?q=${encodeURIComponent(query)}`);
+  const data = await resp.json();
+
+  searchResults.innerHTML = "";
+  if (data.results.length === 0) {
+    searchResults.classList.remove("visible");
+    return;
+  }
+
+  data.results.forEach(protein => {
+    const item = document.createElement("div");
+    item.className = "search-result-item";
+    item.innerHTML = `${protein.name} <span class="search-result-gene">${protein.gene}</span>`;
+    item.onclick = () => selectProtein(protein);
+    searchResults.appendChild(item);
+  });
+  searchResults.classList.add("visible");
+}
+
+async function selectProtein(protein) {
+  searchInput.value = protein.name;
+  searchResults.classList.remove("visible");
+
+  document.getElementById("variantSection").style.display = "none";
+  document.getElementById("card").classList.remove("visible");
+
+  const resp = await fetch(`/variants/${protein.id}`);
+  const data = await resp.json();
+
+  const dropdown = document.getElementById("variantDropdown");
+  dropdown.innerHTML = "";
+
+  if (data.variants.length === 0) {
+    dropdown.innerHTML = `<option>No known disease variants found for this protein</option>`;
+  } else {
+    data.variants.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = JSON.stringify(v);
+      opt.textContent = v.label;
+      dropdown.appendChild(opt);
+    });
+  }
+
+  document.getElementById("variantProteinName").textContent = `${data.protein_name} (${protein.id}) — known variants:`;
+  document.getElementById("variantSection").style.display = "block";
+
+  document.getElementById("generateCustomBtn").onclick = () => generateCustom(protein.id);
+}
+
+async function generateCustom(uniprotId) {
+  const dropdown = document.getElementById("variantDropdown");
+  const variant = JSON.parse(dropdown.value);
+
+  document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("card").classList.remove("visible");
+  document.getElementById("loading").classList.add("visible");
+
+  const resp = await fetch("/generate_custom", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      uniprot_id: uniprotId,
+      position: variant.position,
+      mutant: variant.mutant,
+      disease: variant.disease,
+      description: variant.description,
+    })
+  });
+  const data = await resp.json();
+
+  document.getElementById("loading").classList.remove("visible");
+  renderResult(data);
+}
+
+async function generate(presetKey, btn) {
+  document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+
+  document.getElementById("card").classList.remove("visible");
+  document.getElementById("loading").classList.add("visible");
+
+  const resp = await fetch("/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ preset: presetKey })
+  });
+  const data = await resp.json();
+
+  document.getElementById("loading").classList.remove("visible");
+  renderResult(data);
+}
+
+function renderResult(data) {
+  document.getElementById("card").classList.add("visible");
+
+  document.getElementById("diseaseTag").textContent = data.disease;
+  document.getElementById("proteinName").textContent = data.protein_name + " — " + data.mutation;
+  document.getElementById("proteinMeta").textContent = data.organism + "  •  generated in " + data.time_taken + "s";
+  document.getElementById("note").textContent = data.note;
+
+  const swap = Math.random() > 0.5;
+  document.getElementById("audioA").src = swap ? data.mutant_audio : data.wt_audio;
+  document.getElementById("audioB").src = swap ? data.wt_audio : data.mutant_audio;
+
+  window.mutantTrack = swap ? "A" : "B";
+
+  document.getElementById("guessResult").textContent = "";
+  document.getElementById("guessResult").className = "guess-result";
+  document.querySelectorAll(".guess-btn").forEach(b => b.disabled = false);
+
+  if (window.proteinChart) {
+    window.proteinChart.destroy();
+  }
+
+  const mutIdx = data.chart.positions.indexOf(data.chart.mutation_position);
+
+  // Point colors: red+larger at the mutation site, purple elsewhere
+  const pointColors = data.chart.positions.map((pos, i) =>
+    pos === data.chart.mutation_position ? '#ef4444' : '#7F77DD'
+  );
+  const pointRadii = data.chart.positions.map((pos, i) =>
+    pos === data.chart.mutation_position ? 6 : 0
+  );
+
+  const ctx = document.getElementById("chart");
+  window.proteinChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.chart.positions,
+      datasets: [
+        {
+          label: 'Disruption',
+          data: data.chart.deltas,
+          borderColor: '#7F77DD',
+          backgroundColor: 'rgba(127, 119, 221, 0.15)',
+          borderWidth: 2,
+          pointRadius: pointRadii,
+          pointBackgroundColor: pointColors,
+          pointBorderColor: pointColors,
+          fill: true,
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => 'Position ' + items[0].label,
+            label: (item) => 'Disruption: ' + item.raw
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Residue position', color: '#9999b3' },
+          grid: { color: '#2a2a40' },
+          ticks: { color: '#9999b3', maxTicksLimit: 10 }
+        },
+        y: {
+          title: { display: true, text: 'Embedding disruption (Δ)', color: '#9999b3' },
+          grid: { color: '#2a2a40' },
+          ticks: { color: '#9999b3' },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  const mutDelta = data.chart.deltas[mutIdx];
+  const avgDelta = data.chart.deltas.reduce((a, b) => a + b, 0) / data.chart.deltas.length;
+  const ratio = (mutDelta / avgDelta).toFixed(1);
+
+  document.getElementById("chartExplanation").textContent =
+    `The red dot marks the mutation at position ${data.chart.mutation_position}. ` +
+    `Its disruption score (${mutDelta}) is ${ratio}× the average for this region — ` +
+    `the model "feels" this change far more than a typical position.`;
+}
+
+function makeGuess(choice) {
+  const result = document.getElementById("guessResult");
+  const correct = choice === window.mutantTrack;
+
+  if (correct) {
+    result.textContent = "Correct! Track " + choice + " was the mutant — you heard the disease.";
+    result.className = "guess-result correct";
+  } else {
+    result.textContent = "Not quite — Track " + window.mutantTrack + " was actually the mutant.";
+    result.className = "guess-result incorrect";
+  }
+
+  document.querySelectorAll(".guess-btn").forEach(b => b.disabled = true);
+}
+</script>
+</body>
+</html>
