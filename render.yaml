@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: protein-to-music
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server:app --timeout 120
